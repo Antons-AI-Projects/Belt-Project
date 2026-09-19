@@ -1,0 +1,459 @@
+<title>Belt Price Bridge</title>
+<style>
+  :root {
+    --page-bg: #f9f9f7;
+    --surface-1: #fcfcfb;
+    --text-primary: #0b0b0b;
+    --text-secondary: #52514e;
+    --text-muted: #898781;
+    --gridline: #e1e0d9;
+    --baseline: #c3c2b7;
+    --border: rgba(11,11,11,0.10);
+    --series-wholesale: #2a78d6;
+    --series-markup: #eb6834;
+    --series-vat: #1baf7a;
+    --series-shipping: #eda100;
+    --series-total: #52514e;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --page-bg: #0d0d0d;
+      --surface-1: #1a1a19;
+      --text-primary: #ffffff;
+      --text-secondary: #c3c2b7;
+      --text-muted: #898781;
+      --gridline: #2c2c2a;
+      --baseline: #383835;
+      --border: rgba(255,255,255,0.10);
+      --series-wholesale: #3987e5;
+      --series-markup: #d95926;
+      --series-vat: #199e70;
+      --series-shipping: #c98500;
+      --series-total: #c3c2b7;
+    }
+  }
+  :root[data-theme="dark"] {
+    --page-bg: #0d0d0d;
+    --surface-1: #1a1a19;
+    --text-primary: #ffffff;
+    --text-secondary: #c3c2b7;
+    --text-muted: #898781;
+    --gridline: #2c2c2a;
+    --baseline: #383835;
+    --border: rgba(255,255,255,0.10);
+    --series-wholesale: #3987e5;
+    --series-markup: #d95926;
+    --series-vat: #199e70;
+    --series-shipping: #c98500;
+    --series-total: #c3c2b7;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    background: var(--page-bg);
+    color: var(--text-primary);
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    margin: 0;
+    padding: 24px 16px 48px;
+  }
+  main {
+    max-width: 760px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 32px;
+  }
+  h1 {
+    font-size: 1.5rem;
+    margin: 0 0 4px;
+    text-wrap: balance;
+  }
+  .subtitle {
+    color: var(--text-secondary);
+    margin: 0;
+    max-width: 62ch;
+    line-height: 1.5;
+  }
+  .card {
+    background: var(--surface-1);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px 20px 12px;
+  }
+  .card h2 {
+    font-size: 1.05rem;
+    margin: 0 0 2px;
+  }
+  .card .meta {
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    margin: 0 0 12px;
+  }
+  .chart-scroll {
+    overflow-x: auto;
+  }
+  .chart-scroll svg {
+    display: block;
+    min-width: 560px;
+    width: 100%;
+    height: auto;
+  }
+  .bar-label {
+    font-size: 12px;
+    fill: var(--text-primary);
+    font-variant-numeric: tabular-nums;
+  }
+  .cat-label {
+    font-size: 11px;
+    fill: var(--text-secondary);
+  }
+  .axis-label {
+    font-size: 10px;
+    fill: var(--text-muted);
+    font-variant-numeric: tabular-nums;
+  }
+  .connector {
+    stroke: var(--baseline);
+    stroke-width: 1.5;
+    stroke-dasharray: 3 3;
+    fill: none;
+  }
+  .gridline {
+    stroke: var(--gridline);
+    stroke-width: 1;
+  }
+  .bar {
+    cursor: pointer;
+  }
+  .stat-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin: 8px 0 14px;
+  }
+  .stat {
+    background: var(--page-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+  }
+  .stat b {
+    color: var(--text-primary);
+    font-variant-numeric: tabular-nums;
+  }
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px 18px;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    margin: 4px 0 16px;
+  }
+  .legend span {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .swatch {
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+    display: inline-block;
+  }
+  details {
+    margin: 6px 0 14px;
+  }
+  summary {
+    cursor: pointer;
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+    font-size: 0.85rem;
+  }
+  th, td {
+    text-align: left;
+    padding: 6px 8px;
+    border-bottom: 1px solid var(--gridline);
+    font-variant-numeric: tabular-nums;
+  }
+  th {
+    color: var(--text-muted);
+    font-weight: 600;
+  }
+  .table-wrap {
+    overflow-x: auto;
+  }
+  .closing {
+    color: var(--text-secondary);
+    line-height: 1.6;
+    max-width: 62ch;
+  }
+  #tooltip {
+    position: fixed;
+    pointer-events: none;
+    background: var(--text-primary);
+    color: var(--surface-1);
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-size: 0.78rem;
+    line-height: 1.4;
+    max-width: 220px;
+    opacity: 0;
+    transition: opacity 0.1s ease;
+    z-index: 10;
+    font-variant-numeric: tabular-nums;
+  }
+</style>
+
+<main>
+  <div>
+    <h1>Belt Price Bridge</h1>
+    <p class="subtitle">Two belt builds, both starting from the same speculative wholesale estimate — a 40% retail markup and 25% Danish VAT get baked into the shelf price, then shipping gets added on top of that. Hover any bar for the exact numbers.</p>
+  </div>
+
+  <div class="card">
+    <h2>Belt 1 — a leatherstore</h2>
+    <p class="meta">Heavy English Bridle strap + B8793 buckle, single order, shipping split across both items</p>
+    <div class="legend" id="legend-1"></div>
+    <div class="chart-scroll"><svg id="chart-1" viewBox="0 0 640 300" role="img" aria-label="Belt 1 price bridge from wholesale to total paid"></svg></div>
+    <div class="stat-row">
+      <div class="stat">Total paid is <b>2.30×</b> the wholesale estimate</div>
+      <div class="stat"><b>~130.0%</b> markup over wholesale</div>
+      <div class="stat">Shipping alone is <b>~31.4%</b> of the materials cost</div>
+    </div>
+    <details>
+      <summary>Show data table</summary>
+      <div class="table-wrap" id="table-1"></div>
+    </details>
+  </div>
+
+  <div class="card">
+    <h2>Belt 2 — beltsproduction.com + Etsy</h2>
+    <p class="meta">J&amp;FJ Baker Oak Bark strap + Etsy stainless buckle, two separate orders, two separate shipments</p>
+    <div class="legend" id="legend-2"></div>
+    <div class="chart-scroll"><svg id="chart-2" viewBox="0 0 640 300" role="img" aria-label="Belt 2 price bridge from wholesale to total paid"></svg></div>
+    <div class="stat-row">
+      <div class="stat">Total paid is <b>2.43×</b> the wholesale estimate</div>
+      <div class="stat"><b>~143.1%</b> markup over wholesale</div>
+      <div class="stat">Shipping alone is <b>~38.9%</b> of the materials cost</div>
+    </div>
+    <details>
+      <summary>Show data table</summary>
+      <div class="table-wrap" id="table-2"></div>
+    </details>
+  </div>
+
+  <p class="closing">Same shape both times: wholesale gets a retail markup, then VAT on top of that, then shipping on top of the shelf price. Belt 2 pays a steeper toll only because it draws from two separate suppliers — two boxes opened, two shipments, two slices of risk taken on someone else's shelf.</p>
+</main>
+
+<div id="tooltip"></div>
+
+<script>
+(function () {
+  var fmt = function (n) {
+    return n.toLocaleString('da-DK', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' DKK';
+  };
+
+  var belts = {
+    1: {
+      steps: [
+        { label: 'Wholesale',            type: 'base',  value: 127.31, color: 'var(--series-wholesale)' },
+        { label: '+ Retail markup (40%)', type: 'inc',   delta: 50.92,  rate: 40.0, color: 'var(--series-markup)' },
+        { label: '+ VAT (25%)',           type: 'inc',   delta: 44.57,  rate: 25.0, color: 'var(--series-vat)' },
+        { label: '+ Shipping (31.4%)',    type: 'inc',   delta: 70.00,  rate: 31.4, color: 'var(--series-shipping)' },
+        { label: 'Total paid',            type: 'total', color: 'var(--series-total)' }
+      ]
+    },
+    2: {
+      steps: [
+        { label: 'Wholesale',            type: 'base',  value: 229.27, color: 'var(--series-wholesale)' },
+        { label: '+ Retail markup (40%)', type: 'inc',   delta: 91.71,  rate: 40.0, color: 'var(--series-markup)' },
+        { label: '+ VAT (25%)',           type: 'inc',   delta: 80.25,  rate: 25.0, color: 'var(--series-vat)' },
+        { label: '+ Shipping (38.9%)',    type: 'inc',   delta: 156.15, rate: 38.9, color: 'var(--series-shipping)' },
+        { label: 'Total paid',            type: 'total', color: 'var(--series-total)' }
+      ]
+    }
+  };
+
+  var SHARED_MAX = 600;
+
+  function roundedTopRectPath(x, yTop, w, h, r) {
+    if (h < r * 2) r = Math.max(0, h / 2);
+    return [
+      'M', x + r, yTop,
+      'H', x + w - r,
+      'Q', x + w, yTop, x + w, yTop + r,
+      'V', yTop + h,
+      'H', x,
+      'V', yTop + r,
+      'Q', x, yTop, x + r, yTop,
+      'Z'
+    ].join(' ');
+  }
+
+  function ns(tag) { return document.createElementNS('http://www.w3.org/2000/svg', tag); }
+
+  function render(chartId, tableId, legendId, beltKey) {
+    var data = belts[beltKey].steps;
+    var svg = document.getElementById(chartId);
+    var marginLeft = 44, marginRight = 12, marginTop = 28, marginBottom = 34;
+    var plotW = 640 - marginLeft - marginRight;
+    var plotBottom = 300 - marginBottom;
+    var plotTop = marginTop;
+    var bandW = plotW / data.length;
+
+    function yScale(v) {
+      return plotBottom - (v / SHARED_MAX) * (plotBottom - plotTop);
+    }
+
+    // cumulative values
+    var cum = 0;
+    var resolved = data.map(function (d) {
+      var start, end;
+      if (d.type === 'base') { start = 0; end = d.value; cum = end; }
+      else if (d.type === 'inc') { start = cum; end = cum + d.delta; cum = end; }
+      else { start = 0; end = cum; }
+      return Object.assign({}, d, { start: start, end: end, runningTotal: cum });
+    });
+    var grandTotal = resolved[resolved.length - 1].end;
+
+    // gridlines + axis labels
+    var gridVals = [0, 150, 300, 450, 600];
+    gridVals.forEach(function (gv) {
+      var y = yScale(gv);
+      var line = ns('line');
+      line.setAttribute('x1', marginLeft); line.setAttribute('x2', 640 - marginRight);
+      line.setAttribute('y1', y); line.setAttribute('y2', y);
+      line.setAttribute('class', 'gridline');
+      svg.appendChild(line);
+      var lbl = ns('text');
+      lbl.setAttribute('x', marginLeft - 8); lbl.setAttribute('y', y + 3);
+      lbl.setAttribute('text-anchor', 'end');
+      lbl.setAttribute('class', 'axis-label');
+      lbl.textContent = gv;
+      svg.appendChild(lbl);
+    });
+
+    // connectors
+    for (var i = 0; i < resolved.length - 1; i++) {
+      var x1 = marginLeft + i * bandW + bandW * 0.82;
+      var x2 = marginLeft + (i + 1) * bandW + bandW * 0.18;
+      var y = yScale(resolved[i].end);
+      var line = ns('line');
+      line.setAttribute('x1', x1); line.setAttribute('x2', x2);
+      line.setAttribute('y1', y); line.setAttribute('y2', y);
+      line.setAttribute('class', 'connector');
+      svg.appendChild(line);
+    }
+
+    var tooltip = document.getElementById('tooltip');
+
+    resolved.forEach(function (d, i) {
+      var x = marginLeft + i * bandW + bandW * 0.18;
+      var w = bandW * 0.64;
+      var yTop = yScale(Math.max(d.start, d.end));
+      var yBottom = yScale(Math.min(d.start, d.end));
+      var h = Math.max(2, yBottom - yTop);
+
+      var path = ns('path');
+      path.setAttribute('d', roundedTopRectPath(x, yTop, w, h, 4));
+      path.setAttribute('fill', d.color);
+      path.setAttribute('class', 'bar');
+      svg.appendChild(path);
+
+      var amount = d.type === 'inc' ? d.delta : d.end;
+      var prefix = d.type === 'inc' ? '+' : '';
+      var label = ns('text');
+      label.setAttribute('x', x + w / 2);
+      label.setAttribute('y', yTop - 8);
+      label.setAttribute('text-anchor', 'middle');
+      label.setAttribute('class', 'bar-label');
+      label.textContent = prefix + amount.toFixed(2).replace('.', ',');
+      svg.appendChild(label);
+
+      var catLines = d.label.split(' (');
+      var catLabel = ns('text');
+      catLabel.setAttribute('x', x + w / 2);
+      catLabel.setAttribute('y', plotBottom + 16);
+      catLabel.setAttribute('text-anchor', 'middle');
+      catLabel.setAttribute('class', 'cat-label');
+      catLabel.textContent = catLines[0];
+      svg.appendChild(catLabel);
+      if (catLines[1]) {
+        var catLabel2 = ns('text');
+        catLabel2.setAttribute('x', x + w / 2);
+        catLabel2.setAttribute('y', plotBottom + 28);
+        catLabel2.setAttribute('text-anchor', 'middle');
+        catLabel2.setAttribute('class', 'cat-label');
+        catLabel2.textContent = '(' + catLines[1];
+        svg.appendChild(catLabel2);
+      }
+
+      var hitArea = ns('rect');
+      hitArea.setAttribute('x', marginLeft + i * bandW);
+      hitArea.setAttribute('y', marginTop - 12);
+      hitArea.setAttribute('width', bandW);
+      hitArea.setAttribute('height', plotBottom - marginTop + 12);
+      hitArea.setAttribute('fill', 'transparent');
+      hitArea.style.cursor = 'pointer';
+
+      function showTip(evt) {
+        var pct = ((amount / grandTotal) * 100).toFixed(1);
+        var pctRunning = ((d.runningTotal / grandTotal) * 100).toFixed(1);
+        tooltip.innerHTML = '<strong>' + d.label + '</strong><br>' +
+          (d.type === 'inc' ? 'Adds ' + fmt(d.delta) + ' (' + pct + '% of total)<br>' +
+            (d.rate !== undefined ? 'Rate: ' + d.rate.toFixed(1).replace('.0', '') + '% of the base before this step<br>' : '') : '') +
+          'Running total: ' + fmt(d.runningTotal) + ' (' + pctRunning + '%)';
+        tooltip.style.opacity = 1;
+        tooltip.style.left = (evt.clientX + 14) + 'px';
+        tooltip.style.top = (evt.clientY + 14) + 'px';
+      }
+      hitArea.addEventListener('mousemove', showTip);
+      hitArea.addEventListener('mouseenter', showTip);
+      hitArea.addEventListener('mouseleave', function () { tooltip.style.opacity = 0; });
+      svg.appendChild(hitArea);
+    });
+
+    // legend
+    var legend = document.getElementById(legendId);
+    var legendItems = [
+      ['Wholesale', 'var(--series-wholesale)'],
+      ['Retail markup', 'var(--series-markup)'],
+      ['VAT', 'var(--series-vat)'],
+      ['Shipping', 'var(--series-shipping)'],
+      ['Total paid', 'var(--series-total)']
+    ];
+    legendItems.forEach(function (li) {
+      var span = document.createElement('span');
+      var sw = document.createElement('span');
+      sw.className = 'swatch';
+      sw.style.background = li[1];
+      span.appendChild(sw);
+      span.appendChild(document.createTextNode(li[0]));
+      legend.appendChild(span);
+    });
+
+    // table
+    var table = document.createElement('table');
+    var thead = '<thead><tr><th>Step</th><th>Rate of base</th><th>Amount</th><th>Running total</th><th>% of total</th></tr></thead>';
+    var rows = resolved.map(function (d) {
+      var amount = d.type === 'inc' ? d.delta : d.end;
+      var prefix = d.type === 'inc' ? '+' : '';
+      var pctRunning = ((d.runningTotal / grandTotal) * 100).toFixed(1);
+      var rateCell = d.rate !== undefined ? d.rate.toFixed(1).replace('.0', '') + '%' : '—';
+      return '<tr><td>' + d.label + '</td><td>' + rateCell + '</td><td>' + prefix + fmt(amount) + '</td><td>' + fmt(d.runningTotal) + '</td><td>' + pctRunning + '%</td></tr>';
+    }).join('');
+    table.innerHTML = thead + '<tbody>' + rows + '</tbody>';
+    document.getElementById(tableId).appendChild(table);
+  }
+
+  render('chart-1', 'table-1', 'legend-1', 1);
+  render('chart-2', 'table-2', 'legend-2', 2);
+})();
+</script>
